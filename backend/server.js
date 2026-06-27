@@ -273,7 +273,7 @@ async function runDownloadQueue(sessionId, sessionDir, tracks, globalFormat, glo
     let overallSpeed = '';
     let overallEta = '';
 
-    const CONCURRENCY = Math.min(3, total);
+    const CONCURRENCY = Math.min(5, total);
 
     const downloadTrack = async (track, index) => {
       const url = track.url;
@@ -295,7 +295,10 @@ async function runDownloadQueue(sessionId, sessionDir, tracks, globalFormat, glo
         currentTitle: Array.from(activeTitles).slice(0, 2).join(', ') + (activeTitles.size > 2 ? ` (+${activeTitles.size - 2} more)` : '')
       });
 
-      const args = [];
+      const args = [
+        '--concurrent-fragments', '16',
+        '--no-playlist'
+      ];
       const audioFormats = ['mp3', 'm4a', 'wav', 'flac', 'opus'];
       const isAudioOnly = audioFormats.includes(format);
 
