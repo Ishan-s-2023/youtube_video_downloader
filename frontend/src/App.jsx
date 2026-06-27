@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Download, 
-  Youtube, 
   Check, 
   AlertCircle, 
   Music, 
@@ -236,7 +235,18 @@ export default function App() {
           {isLightTheme ? <Moon size={18} /> : <Sun size={18} />}
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-          <Youtube size={42} className="text-gradient" style={{ filter: 'drop-shadow(0 0 12px rgba(99,102,241,0.5))' }} />
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0 0 12px rgba(6,182,212,0.5))' }}>
+            <defs>
+              <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#00f5d4" />
+                <stop offset="50%" stopColor="#06b6d4" />
+                <stop offset="100%" stopColor="#10b981" />
+              </linearGradient>
+            </defs>
+            <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" stroke="url(#logo-grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="12" cy="12" r="4" stroke="url(#logo-grad)" strokeWidth="2" strokeDasharray="2 1.5" />
+            <path d="M12 8v6M10 12l2 2 2-2" stroke="url(#logo-grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
           <h1>Loader</h1>
         </div>
         <p className="subtitle">Premium YouTube Video & Playlist Downloader</p>
@@ -489,7 +499,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div style={{ width: '100%', maxWidth: '500px', marginTop: '-0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <div style={{ width: '100%', maxWidth: '500px', marginTop: '-0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '0.25rem' }}>
                   <p className="progress-subtext" style={{ fontWeight: '600', fontSize: '1.2rem', color: 'var(--text-primary)' }}>
                     {downloadStatus.currentTitle || 'Preparing items...'}
                   </p>

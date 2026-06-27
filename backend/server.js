@@ -185,6 +185,8 @@ app.post('/api/download', async (req, res) => {
 async function runDownloadQueue(sessionId, sessionDir, urls, format, resolution, audioQuality) {
   try {
     const total = urls.length;
+    const failedVideos = [];
+    let successfulCount = 0;
     
     for (let i = 0; i < total; i++) {
       const url = urls[i];
@@ -208,16 +210,12 @@ async function runDownloadQueue(sessionId, sessionDir, urls, format, resolution,
       if (isAudioOnly) {
         args.push('--extract-audio');
         args.push('--audio-format', format);
-        
-        // Handle audio bitrate (quality) mapping
-        // yt-dlp quality: 0-9 (0 is best), or a specific bitrate in kbps like 320k, 256k
         if (audioQuality && audioQuality !== 'best') {
           args.push('--audio-quality', `${audioQuality}k`);
         } else {
-          args.push('--audio-quality', '0'); // best
+          args.push('--audio-quality', '0');
         }
       } else {
-        // Video options
         const isVideoOnly = format.endsWith('-noaudio');
         const container = format.startsWith('webm') ? 'webm' : 'mp4';
         
@@ -230,7 +228,6 @@ async function runDownloadQueue(sessionId, sessionDir, urls, format, resolution,
           }
           args.push('-f', formatFilter);
         } else {
-          // Both Audio & Video
           args.push('--merge-output-format', container);
           let formatFilter = `bv*[ext=${container}]+ba[ext=m4a]/b[ext=${container}]`;
           if (container === 'webm') {
@@ -252,7 +249,7 @@ async function runDownloadQueue(sessionId, sessionDir, urls, format, resolution,
       args.push('-o', path.join(sessionDir, '%(title)s.%(ext)s'));
       args.push(url);
 
-      await new Promise((resolve, reject) => {
+      const success = await new Promise((resolve) => {
         console.log(`Spawning yt-dlp: ${args.join(' ')}`);
         const child = spawn(ytdlpPath, args);
         
@@ -260,14 +257,12 @@ async function runDownloadQueue(sessionId, sessionDir, urls, format, resolution,
         child.stdout.on('data', (data) => {
           buffer += data.toString();
           const lines = buffer.split(/\r?\n/);
-          buffer = lines.pop(); // save last incomplete line
+          buffer = lines.pop();
           
           for (const line of lines) {
             const percentMatch = line.match(/\[download\]\s+(\d+(?:\.\d+)?)%/);
             if (percentMatch) {
               const percent = parseFloat(percentMatch[1]);
-              
-              // Capture speed and ETA individually to support varying size/spacing formats
               const speedMatch = line.match(/at\s+(\S+\/s)/) || line.match(/at\s+(\S+)/);
               const etaMatch = line.match(/ETA\s+(\S+)/);
               
@@ -288,11 +283,25 @@ async function runDownloadQueue(sessionId, sessionDir, urls, format, resolution,
           }
         });
 
+        child.stderr.on('data', (data) => {
+          console.error(`yt-dlp stderr: ${data.toString()}`);
+        });
+
         child.on('close', (code) => {
-          if (code === 0) resolve();
-          else reject(new Error(`yt-dlp exited with code ${code}`));
+          resolve(code === 0);
         });
       });
+
+      if (success) {
+        successfulCount++;
+      } else {
+        console.warn(`Track fail: ${title || url}`);
+        failedVideos.push(title || `Track ${videoIndex}`);
+      }
+    }
+
+    if (successfulCount === 0) {
+      throw new Error('All selected tracks failed to download.');
     }
 
     broadcastStatus(sessionId, {
@@ -311,7 +320,9 @@ async function runDownloadQueue(sessionId, sessionDir, urls, format, resolution,
     broadcastStatus(sessionId, {
       status: 'completed',
       progress: 100,
-      details: 'ZIP archive created successfully!'
+      details: failedVideos.length > 0
+        ? `Finished. Successfully packaged ${successfulCount} tracks. Skipped ${failedVideos.length} failed tracks: ${failedVideos.join(', ')}`
+        : 'ZIP archive created successfully!'
     });
 
   } catch (error) {
