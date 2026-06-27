@@ -256,30 +256,35 @@ async function runDownloadQueue(sessionId, sessionDir, urls, format, resolution,
         console.log(`Spawning yt-dlp: ${args.join(' ')}`);
         const child = spawn(ytdlpPath, args);
         
+        let buffer = '';
         child.stdout.on('data', (data) => {
-          const output = data.toString();
-          const percentMatch = output.match(/\[download\]\s+(\d+(?:\.\d+)?)%/);
+          buffer += data.toString();
+          const lines = buffer.split(/\r?\n/);
+          buffer = lines.pop(); // save last incomplete line
           
-          if (percentMatch) {
-            const percent = parseFloat(percentMatch[1]);
-            
-            // Capture speed and ETA individually to support varying size/spacing formats
-            const speedMatch = output.match(/at\s+(\S+\/s)/) || output.match(/at\s+(\S+)/);
-            const etaMatch = output.match(/ETA\s+(\S+)/);
-            
-            const speed = speedMatch ? speedMatch[1] : '';
-            const eta = etaMatch ? etaMatch[1] : '';
-            
-            const baseProgress = ((videoIndex - 1) / total) * 100;
-            const itemContribution = (percent / total);
-            const overallProgress = Math.round(baseProgress + itemContribution);
-            
-            broadcastStatus(sessionId, {
-              progress: overallProgress,
-              speed,
-              eta,
-              details: `Downloading video ${videoIndex} of ${total} (${percent}%)`
-            });
+          for (const line of lines) {
+            const percentMatch = line.match(/\[download\]\s+(\d+(?:\.\d+)?)%/);
+            if (percentMatch) {
+              const percent = parseFloat(percentMatch[1]);
+              
+              // Capture speed and ETA individually to support varying size/spacing formats
+              const speedMatch = line.match(/at\s+(\S+\/s)/) || line.match(/at\s+(\S+)/);
+              const etaMatch = line.match(/ETA\s+(\S+)/);
+              
+              const speed = speedMatch ? speedMatch[1] : '';
+              const eta = etaMatch ? etaMatch[1] : '';
+              
+              const baseProgress = ((videoIndex - 1) / total) * 100;
+              const itemContribution = (percent / total);
+              const overallProgress = Math.round(baseProgress + itemContribution);
+              
+              broadcastStatus(sessionId, {
+                progress: overallProgress,
+                speed,
+                eta,
+                details: `Downloading track (${percent}%)`
+              });
+            }
           }
         });
 

@@ -17,7 +17,7 @@ import {
 const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
 
 export default function App() {
-  const [isLightTheme, setIsLightTheme] = useState(false);
+  const [isLightTheme, setIsLightTheme] = useState(true);
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -489,15 +489,21 @@ export default function App() {
                   </div>
                 </div>
 
-                <div style={{ width: '100%', maxWidth: '500px', marginTop: '-0.5rem' }}>
-                  <p className="progress-subtext" style={{ fontWeight: '600', fontSize: '1.2rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+                <div style={{ width: '100%', maxWidth: '500px', marginTop: '-0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <p className="progress-subtext" style={{ fontWeight: '600', fontSize: '1.2rem', color: 'var(--text-primary)' }}>
                     {downloadStatus.currentTitle || 'Preparing items...'}
                   </p>
+                  
+                  {/* Song and loading part, with file index grouped exactly below the circle */}
+                  <p style={{ fontSize: '0.95rem', fontWeight: '500', color: 'var(--primary)', margin: '0.125rem 0' }}>
+                    File {downloadStatus.currentVideoIndex} out of {downloadStatus.totalVideos}
+                  </p>
+
                   <p className="progress-subtext" style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                     {downloadStatus.details}
                   </p>
                   
-                  <div className="linear-progress-track">
+                  <div className="linear-progress-track" style={{ marginTop: '0.5rem' }}>
                     <div className="linear-progress-bar" style={{ width: `${downloadStatus.progress || 0}%` }}></div>
                   </div>
                 </div>
@@ -505,14 +511,10 @@ export default function App() {
                 {downloadStatus.status === 'downloading' && (
                   <div className="progress-stats-box">
                     <div className="stat-item">
-                      <span className="stat-label">File</span>
-                      <span className="stat-value">{downloadStatus.currentVideoIndex} / {downloadStatus.totalVideos}</span>
-                    </div>
-                    <div className="stat-item" style={{ borderLeft: '1px solid var(--border-glass)', paddingLeft: '2rem' }}>
                       <span className="stat-label">Speed</span>
                       <span className="stat-value">{downloadStatus.speed || '--'}</span>
                     </div>
-                    <div className="stat-item" style={{ borderLeft: '1px solid var(--border-glass)', paddingLeft: '2rem' }}>
+                    <div className="stat-item" style={{ borderLeft: '1px solid var(--border-glass)', paddingLeft: '3rem' }}>
                       <span className="stat-label">ETA</span>
                       <span className="stat-value">{downloadStatus.eta || '--'}</span>
                     </div>
