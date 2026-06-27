@@ -1,16 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
   <defs>
-    <linearGradient id="fav-grad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+    <linearGradient id="fav-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#00f5d4" />
-      <stop offset="50%" stop-color="#06b6d4" />
-      <stop offset="100%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#06b6d4" />
     </linearGradient>
   </defs>
-  <!-- Background Shape: Hexagonal shield with vibrant cyan-to-emerald gradient -->
-  <path d="M24 2L6 12v24l18 10 18-10V12L24 2z" fill="url(#fav-grad)" />
-  <!-- Contrast layer inside -->
-  <path d="M24 5L8 14v20l16 8 16-8V14L24 5z" fill="#07090e" />
-  <!-- Centered unique download/extraction loop concept -->
-  <circle cx="24" cy="24" r="10" stroke="url(#fav-grad)" stroke-width="2.5" stroke-dasharray="4 2" />
-  <path d="M24 15v14M19 24l5 5 5-5" stroke="url(#fav-grad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Minimalist tray/bracket representing the zip archive container -->
+  <path d="M6 18v6c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-6" stroke="url(#fav-grad)" stroke-width="3" stroke-linecap="round" />
+  <!-- Minimalist down-arrow representing the downloader -->
+  <path d="M16 6v12M11 13l5 5 5-5" stroke="url(#fav-grad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
 </svg>

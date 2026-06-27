@@ -67,6 +67,16 @@ export default function App() {
     if (e) e.preventDefault();
     if (!url.trim()) return;
 
+    // Split input into lines, trim, and filter valid URLs
+    const urls = url.split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(line => line && (line.startsWith('http://') || line.startsWith('https://')));
+
+    if (urls.length === 0) {
+      setError('Please enter at least one valid YouTube URL.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setPlaylistData(null);
@@ -76,7 +86,7 @@ export default function App() {
       const response = await fetch(`${API_BASE}/api/info`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
+        body: JSON.stringify({ urls })
       });
 
       const data = await response.json();
@@ -235,17 +245,15 @@ export default function App() {
           {isLightTheme ? <Moon size={18} /> : <Sun size={18} />}
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0 0 12px rgba(6,182,212,0.5))' }}>
+          <svg width="42" height="42" viewBox="0 0 32 32" fill="none" style={{ filter: 'drop-shadow(0 0 12px rgba(6,182,212,0.5))' }}>
             <defs>
               <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#00f5d4" />
-                <stop offset="50%" stopColor="#06b6d4" />
-                <stop offset="100%" stopColor="#10b981" />
+                <stop offset="100%" stopColor="#06b6d4" />
               </linearGradient>
             </defs>
-            <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" stroke="url(#logo-grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="12" cy="12" r="4" stroke="url(#logo-grad)" strokeWidth="2" strokeDasharray="2 1.5" />
-            <path d="M12 8v6M10 12l2 2 2-2" stroke="url(#logo-grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M6 18v6c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-6" stroke="url(#logo-grad)" strokeWidth="3" strokeLinecap="round" />
+            <path d="M16 6v12M11 13l5 5 5-5" stroke="url(#logo-grad)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <h1>Loader</h1>
         </div>
@@ -267,26 +275,26 @@ export default function App() {
             <p style={{ color: 'var(--text-secondary)', textAlign: 'center', fontSize: '1.05rem', lineHeight: '1.6' }}>
               Paste any YouTube video or playlist URL below to customize your formats, resolutions, and download them packaged as a ZIP.
             </p>
-            <form onSubmit={handleFetchInfo} className="search-wrapper">
-              <input
-                type="url"
+            <form onSubmit={handleFetchInfo} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%' }}>
+              <textarea
                 className="search-input"
-                placeholder="https://www.youtube.com/watch?v=... or https://www.youtube.com/playlist?list=..."
+                style={{ resize: 'vertical', minHeight: '120px', lineHeight: '1.5', padding: '1rem 1.25rem' }}
+                placeholder="Paste YouTube video or playlist links here (one per line)...&#10;https://www.youtube.com/watch?v=123&#10;https://www.youtube.com/playlist?list=abc"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 required
                 disabled={loading}
               />
-              <button type="submit" className="btn-primary" disabled={loading}>
+              <button type="submit" className="btn-primary" style={{ height: '54px', width: '100%', justifyContent: 'center' }} disabled={loading}>
                 {loading ? (
                   <>
                     <RefreshCw className="animate-spin" size={18} />
-                    Extracting...
+                    Extracting Tracks...
                   </>
                 ) : (
                   <>
                     <Download size={18} />
-                    Extract
+                    Extract All Links
                   </>
                 )}
               </button>

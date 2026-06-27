@@ -100,56 +100,105 @@ function broadcastStatus(sessionId, statusData) {
   });
 }
 
+// Fetch Video/Playlist Metadata for single URL helper
+function fetchSingleUrlInfo(url) {
+  return new Promise((resolve, reject) => {
+    const args = ['--dump-single-json', '--flat-playlist', url];
+    execFile(ytdlpPath, args, { maxBuffer: 20 * 1024 * 1024 }, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error fetching info for ${url}: ${stderr || error.message}`);
+        return reject(new Error(`Failed to retrieve info for: ${url}`));
+      }
+      try {
+        const data = JSON.parse(stdout);
+        const isPlaylist = data._type === 'playlist';
+        const title = data.title || 'Unknown Title';
+        
+        let entries = [];
+        if (isPlaylist) {
+          entries = (data.entries || []).map((entry) => ({
+            id: entry.id,
+            title: entry.title || 'Untitled Video',
+            duration: entry.duration || 0,
+            thumbnail: entry.thumbnails?.[0]?.url || entry.thumbnail || null,
+            url: entry.url || `https://www.youtube.com/watch?v=${entry.id}`
+          }));
+        } else {
+          entries = [{
+            id: data.id,
+            title: data.title || 'Untitled Video',
+            duration: data.duration || 0,
+            thumbnail: data.thumbnails?.[0]?.url || data.thumbnail || null,
+            url: data.webpage_url || `https://www.youtube.com/watch?v=${data.id}`
+          }];
+        }
+        resolve({ title, entries, isPlaylist });
+      } catch (parseErr) {
+        reject(parseErr);
+      }
+    });
+  });
+}
+
 // Fetch Video/Playlist Metadata
-app.post('/api/info', (req, res) => {
-  const { url } = req.body;
-  if (!url) {
-    return res.status(400).json({ error: 'URL is required' });
+app.post('/api/info', async (req, res) => {
+  const { urls, url } = req.body;
+  const urlList = urls && Array.isArray(urls) ? urls : (url ? [url] : []);
+  
+  if (urlList.length === 0) {
+    return res.status(400).json({ error: 'At least one URL is required.' });
   }
 
-  console.log(`Fetching info for URL: ${url}`);
-  const args = ['--dump-single-json', '--flat-playlist', url];
+  console.log(`Fetching info for URLs: ${urlList.join(', ')}`);
   
-  execFile(ytdlpPath, args, { maxBuffer: 20 * 1024 * 1024 }, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error fetching info: ${stderr || error.message}`);
-      return res.status(500).json({ error: 'Failed to retrieve YouTube info. Verify the link.' });
-    }
-
-    try {
-      const data = JSON.parse(stdout);
-      const isPlaylist = data._type === 'playlist';
-      const title = data.title || 'Unknown Title';
-      
-      let entries = [];
-      if (isPlaylist) {
-        entries = (data.entries || []).map((entry) => ({
-          id: entry.id,
-          title: entry.title || 'Untitled Video',
-          duration: entry.duration || 0,
-          thumbnail: entry.thumbnails?.[0]?.url || entry.thumbnail || null,
-          url: entry.url || `https://www.youtube.com/watch?v=${entry.id}`
-        }));
-      } else {
-        entries = [{
-          id: data.id,
-          title: data.title || 'Untitled Video',
-          duration: data.duration || 0,
-          thumbnail: data.thumbnails?.[0]?.url || data.thumbnail || null,
-          url: data.webpage_url || `https://www.youtube.com/watch?v=${data.id}`
-        }];
+  try {
+    const results = await Promise.all(urlList.map(async (targetUrl) => {
+      try {
+        return await fetchSingleUrlInfo(targetUrl);
+      } catch (err) {
+        console.warn(`Failed to fetch metadata for ${targetUrl}:`, err.message);
+        return null;
       }
+    }));
 
-      res.json({
-        title,
-        isPlaylist,
-        entries
-      });
-    } catch (parseErr) {
-      console.error('Error parsing JSON:', parseErr);
-      res.status(500).json({ error: 'Failed to parse YouTube metadata.' });
+    const combinedEntries = [];
+    const sourceTitles = [];
+    let hasPlaylist = false;
+
+    for (const result of results) {
+      if (result) {
+        combinedEntries.push(...result.entries);
+        sourceTitles.push(result.title);
+        if (result.isPlaylist) hasPlaylist = true;
+      }
     }
-  });
+
+    if (combinedEntries.length === 0) {
+      return res.status(500).json({ error: 'Failed to retrieve metadata from all provided links.' });
+    }
+
+    // Deduplicate entries by video ID
+    const seenIds = new Set();
+    const uniqueEntries = [];
+    for (const entry of combinedEntries) {
+      if (!seenIds.has(entry.id)) {
+        seenIds.add(entry.id);
+        uniqueEntries.push(entry);
+      }
+    }
+
+    res.json({
+      title: sourceTitles.length > 2 
+        ? `${sourceTitles.slice(0, 2).join(', ')} and ${sourceTitles.length - 2} more`
+        : sourceTitles.join(', '),
+      isPlaylist: hasPlaylist || uniqueEntries.length > 1,
+      entries: uniqueEntries
+    });
+
+  } catch (err) {
+    console.error('Error combining metadata:', err);
+    res.status(500).json({ error: 'Failed to parse YouTube metadata.' });
+  }
 });
 
 // Trigger Download
