@@ -489,11 +489,11 @@ export default function App() {
                   </div>
                 </div>
 
-                <div style={{ width: '100%', maxWidth: '500px' }}>
-                  <p className="progress-subtext" style={{ fontWeight: '500', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+                <div style={{ width: '100%', maxWidth: '500px', marginTop: '-0.5rem' }}>
+                  <p className="progress-subtext" style={{ fontWeight: '600', fontSize: '1.2rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
                     {downloadStatus.currentTitle || 'Preparing items...'}
                   </p>
-                  <p className="progress-subtext" style={{ fontSize: '0.85rem' }}>
+                  <p className="progress-subtext" style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                     {downloadStatus.details}
                   </p>
                   

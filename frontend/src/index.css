@@ -516,7 +516,7 @@ h1 {
 .linear-progress-track {
   width: 100%;
   height: 8px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--border-glass);
   border-radius: 9999px;
   overflow: hidden;
   margin-top: 0.5rem;

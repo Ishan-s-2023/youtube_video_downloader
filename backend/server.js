@@ -193,6 +193,8 @@ async function runDownloadQueue(sessionId, sessionDir, urls, format, resolution,
       broadcastStatus(sessionId, {
         status: 'downloading',
         currentVideoIndex: videoIndex,
+        speed: '',
+        eta: '',
         details: `Fetching metadata for video ${videoIndex} of ${total}...`
       });
 
