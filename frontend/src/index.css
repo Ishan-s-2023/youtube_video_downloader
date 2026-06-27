@@ -27,6 +27,8 @@
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --radius-xl: 18px;
   --radius-2xl: 24px;
+  --bg-input: rgba(255, 255, 255, 0.05);
+  --text-placeholder: rgba(255, 255, 255, 0.4);
 }
 
 :root.light-theme {
@@ -39,6 +41,8 @@
   --text-secondary: #4b5563;
   --text-muted: #9ca3af;
   --shadow-premium: 0 20px 40px -15px rgba(0, 0, 0, 0.06);
+  --bg-input: rgba(0, 0, 0, 0.04);
+  --text-placeholder: rgba(0, 0, 0, 0.45);
 }
 
 * {
@@ -153,7 +157,7 @@ h1 {
 
 .search-input {
   flex: 1;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--bg-input);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-xl);
   padding: 1.25rem 1.5rem;
@@ -167,10 +171,11 @@ h1 {
 .search-input:focus {
   border-color: var(--border-glass-active);
   box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+  background: var(--bg-card);
 }
 
 .search-input::placeholder {
-  color: var(--text-muted);
+  color: var(--text-placeholder);
 }
 
 .btn-primary {
@@ -401,12 +406,12 @@ h1 {
   flex-shrink: 0;
 }
 
-.track-item.selected .track-checkbox {
+.track-item-wrapper.selected .track-checkbox {
   background: var(--primary);
   border-color: var(--primary);
 }
 
-.track-item.selected .track-checkbox::after {
+.track-item-wrapper.selected .track-checkbox::after {
   content: "✓";
   color: white;
   font-size: 11px;
@@ -614,3 +619,224 @@ h1 {
     gap: 1rem;
   }
 }
+
+/* Advanced Features UI Styling */
+.search-textarea {
+  width: 100%;
+  min-height: 120px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  transition: var(--transition-smooth);
+}
+
+.search-textarea:focus {
+  border-color: var(--border-glass-active);
+  box-shadow: 0 0 15px var(--primary-glow);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.track-item-wrapper {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--border-glass);
+  overflow: hidden;
+  transition: var(--transition-smooth);
+  flex-shrink: 0;
+}
+
+.track-item-wrapper:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.track-item-wrapper.selected {
+  border-color: rgba(6, 182, 212, 0.2);
+  background: rgba(6, 182, 212, 0.02);
+}
+
+/* Override the standard track-item style to blend in track-item-wrapper */
+.track-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  width: 100%;
+}
+
+.track-settings-toggle {
+  background: transparent;
+  border: 1px solid var(--border-glass);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: auto;
+  transition: var(--transition-smooth);
+}
+
+.track-settings-toggle:hover, .track-settings-toggle.active {
+  background: var(--primary-glow);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.track-settings-panel {
+  border-top: 1px solid var(--border-glass);
+  padding: 1.25rem;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  animation: slideDown 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.track-setting-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.track-setting-col {
+  flex: 1;
+  min-width: 140px;
+}
+
+.track-setting-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.track-select {
+  width: 100%;
+  background: var(--bg-obsidian);
+  border: 1px solid var(--border-glass);
+  border-radius: 8px;
+  padding: 0.5rem;
+  color: var(--text-primary);
+  outline: none;
+  font-size: 0.9rem;
+}
+
+.track-select:focus {
+  border-color: var(--primary);
+}
+
+.track-trim-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.track-input {
+  width: 100%;
+  background: var(--bg-obsidian);
+  border: 1px solid var(--border-glass);
+  border-radius: 8px;
+  padding: 0.5rem;
+  color: var(--text-primary);
+  outline: none;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.track-input:focus {
+  border-color: var(--primary);
+}
+
+/* Global feature switch styling */
+.switch-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-glass);
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.switch-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.switch-card.active {
+  border-color: rgba(6, 182, 212, 0.25);
+  background: rgba(6, 182, 212, 0.02);
+}
+
+.switch-label-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.switch-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.switch-desc {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.switch-toggle-btn {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  position: relative;
+  transition: var(--transition-smooth);
+  flex-shrink: 0;
+}
+
+.switch-card.active .switch-toggle-btn {
+  background: var(--primary);
+}
+
+.switch-circle {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: var(--transition-smooth);
+}
+
+.switch-card.active .switch-circle {
+  transform: translateX(20px);
+}
+

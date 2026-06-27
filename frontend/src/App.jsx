@@ -30,11 +30,58 @@ export default function App() {
   const [format, setFormat] = useState('mp3'); // 'mp3', 'm4a', 'wav', 'flac', 'opus', 'mp4', 'webm'
   const [resolution, setResolution] = useState('best'); // 'best', '1080', '720', '480', '360'
   const [audioQuality, setAudioQuality] = useState('best'); // 'best', '320', '256', '192', '128'
+
+  // Global features state
+  const [embedMetadata, setEmbedMetadata] = useState(true);
+  const [downloadSubtitles, setDownloadSubtitles] = useState(false);
+  const [embedSubtitles, setEmbedSubtitles] = useState(false);
+
+  // Per-track settings override state (trackId -> override object)
+  const [trackOverrides, setTrackOverrides] = useState({});
+  // Expanded tracks set (trackId)
+  const [expandedTracks, setExpandedTracks] = useState(new Set());
   
   // Download execution state
   const [sessionId, setSessionId] = useState(null);
   const [downloadStatus, setDownloadStatus] = useState(null);
   const eventSourceRef = useRef(null);
+
+  const toggleTrackSettings = (trackId) => {
+    const next = new Set(expandedTracks);
+    if (next.has(trackId)) {
+      next.delete(trackId);
+    } else {
+      next.add(trackId);
+    }
+    setExpandedTracks(next);
+  };
+
+  const updateTrackOverride = (trackId, key, value) => {
+    setTrackOverrides(prev => {
+      const currentTrack = prev[trackId] || {
+        useCustom: false,
+        category: 'audio',
+        format: 'mp3',
+        resolution: 'best',
+        audioQuality: 'best',
+        trimStart: '',
+        trimEnd: ''
+      };
+      const updatedTrack = { ...currentTrack, [key]: value };
+      
+      // Auto-set default format if category changes
+      if (key === 'category') {
+        if (value === 'audio') updatedTrack.format = 'mp3';
+        else if (value === 'video-audio') updatedTrack.format = 'mp4';
+        else if (value === 'video-only') updatedTrack.format = 'mp4-noaudio';
+      }
+
+      return {
+        ...prev,
+        [trackId]: updatedTrack
+      };
+    });
+  };
 
   // Set default format based on category
   useEffect(() => {
@@ -61,6 +108,26 @@ export default function App() {
     const m = Math.floor(sec / 60);
     const s = Math.floor(sec % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
+  };
+
+  const handlePaste = (e) => {
+    const pastedText = e.clipboardData.getData('text');
+    if (pastedText && pastedText.trim()) {
+      e.preventDefault();
+      const textarea = e.target;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const currentValue = textarea.value;
+      
+      const textToInsert = pastedText.endsWith('\n') ? pastedText : pastedText + '\n';
+      const newValue = currentValue.substring(0, start) + textToInsert + currentValue.substring(end);
+      
+      setUrl(newValue);
+      
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + textToInsert.length;
+      }, 0);
+    }
   };
 
   const handleFetchInfo = async (e) => {
@@ -132,19 +199,40 @@ export default function App() {
     setError(null);
     setLoading(true);
 
-    const selectedUrls = playlistData.entries
+    const tracksPayload = playlistData.entries
       .filter(e => selectedTracks.has(e.id))
-      .map(e => e.url);
+      .map(e => {
+        const override = trackOverrides[e.id];
+        if (override && override.useCustom) {
+          return {
+            url: e.url,
+            format: override.format,
+            resolution: override.resolution,
+            audioQuality: override.audioQuality,
+            trimStart: override.trimStart || undefined,
+            trimEnd: override.trimEnd || undefined
+          };
+        }
+        return {
+          url: e.url,
+          format: format,
+          resolution: resolution,
+          audioQuality: audioQuality
+        };
+      });
 
     try {
       const response = await fetch(`${API_BASE}/api/download`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          urls: selectedUrls,
+          tracks: tracksPayload,
           format: format,
           resolution,
-          audioQuality
+          audioQuality,
+          embedMetadata,
+          downloadSubtitles,
+          embedSubtitles
         })
       });
 
@@ -282,6 +370,7 @@ export default function App() {
                 placeholder="Paste YouTube video or playlist links here (one per line)...&#10;https://www.youtube.com/watch?v=123&#10;https://www.youtube.com/playlist?list=abc"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
+                onPaste={handlePaste}
                 required
                 disabled={loading}
               />
@@ -411,6 +500,52 @@ export default function App() {
                     </div>
                   </div>
                 )}
+
+                {/* Advanced Enrichment Options */}
+                <div style={{ marginTop: '1.5rem' }}>
+                  <h3 className="config-section-title">Options</h3>
+                  <div 
+                    className={`switch-card ${embedMetadata ? 'active' : ''}`}
+                    onClick={() => setEmbedMetadata(!embedMetadata)}
+                  >
+                    <div className="switch-label-container">
+                      <span className="switch-title">Embed Metadata & Art</span>
+                      <span className="switch-desc">Tag files & embed cover artwork</span>
+                    </div>
+                    <div className="switch-toggle-btn">
+                      <div className="switch-circle"></div>
+                    </div>
+                  </div>
+
+                  <div 
+                    className={`switch-card ${downloadSubtitles ? 'active' : ''}`}
+                    onClick={() => setDownloadSubtitles(!downloadSubtitles)}
+                  >
+                    <div className="switch-label-container">
+                      <span className="switch-title">Download Subtitles</span>
+                      <span className="switch-desc">Extract English CC/subtitles</span>
+                    </div>
+                    <div className="switch-toggle-btn">
+                      <div className="switch-circle"></div>
+                    </div>
+                  </div>
+
+                  {downloadSubtitles && category !== 'audio' && (
+                    <div 
+                      className={`switch-card ${embedSubtitles ? 'active' : ''}`}
+                      onClick={() => setEmbedSubtitles(!embedSubtitles)}
+                      style={{ marginLeft: '1.25rem', borderLeft: '2px solid var(--primary)', borderRadius: '0 12px 12px 0' }}
+                    >
+                      <div className="switch-label-container">
+                        <span className="switch-title">Embed Subtitles in Video</span>
+                        <span className="switch-desc">Merge subtitles directly into video</span>
+                      </div>
+                      <div className="switch-toggle-btn">
+                        <div className="switch-circle"></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Right Column: Track Selector */}
@@ -426,20 +561,181 @@ export default function App() {
                 <div className="playlist-list">
                   {playlistData.entries.map((entry) => {
                     const isSelected = selectedTracks.has(entry.id);
+                    const isExpanded = expandedTracks.has(entry.id);
+                    const override = trackOverrides[entry.id] || {
+                      useCustom: false,
+                      category: 'audio',
+                      format: 'mp3',
+                      resolution: 'best',
+                      audioQuality: 'best',
+                      trimStart: '',
+                      trimEnd: ''
+                    };
+
                     return (
-                      <div 
-                        key={entry.id} 
-                        className={`track-item ${isSelected ? 'selected' : ''}`}
-                        onClick={() => handleToggleTrack(entry.id)}
-                      >
-                        <div className="track-checkbox"></div>
-                        {entry.thumbnail && (
-                          <img src={entry.thumbnail} alt="" className="track-thumb" />
-                        )}
-                        <div className="track-details">
-                          <div className="track-title" title={entry.title}>{entry.title}</div>
-                          <div className="track-meta">{formatDuration(entry.duration)}</div>
+                      <div key={entry.id} className={`track-item-wrapper ${isSelected ? 'selected' : ''}`}>
+                        <div 
+                          className="track-item"
+                          onClick={() => handleToggleTrack(entry.id)}
+                        >
+                          <div className="track-checkbox"></div>
+                          {entry.thumbnail && (
+                            <img src={entry.thumbnail} alt="" className="track-thumb" />
+                          )}
+                          <div className="track-details">
+                            <div className="track-title" title={entry.title}>{entry.title}</div>
+                            <div className="track-meta">
+                              {formatDuration(entry.duration)}
+                              {override.useCustom && (
+                                <span style={{ marginLeft: '0.5rem', color: 'var(--primary)', fontWeight: '600', fontSize: '0.75rem' }}>
+                                  (Custom Overrides)
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <button 
+                            type="button"
+                            className={`track-settings-toggle ${isExpanded ? 'active' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleTrackSettings(entry.id);
+                            }}
+                            title="Customize track settings"
+                          >
+                            <Settings size={16} />
+                          </button>
                         </div>
+
+                        {isExpanded && (
+                          <div className="track-settings-panel">
+                            <div className="track-setting-row" style={{ alignItems: 'center' }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '500' }}>
+                                <input 
+                                  type="checkbox" 
+                                  checked={override.useCustom} 
+                                  onChange={(e) => updateTrackOverride(entry.id, 'useCustom', e.target.checked)}
+                                  style={{ accentColor: 'var(--primary)', width: '16px', height: '16px' }}
+                                />
+                                Override global settings
+                              </label>
+                            </div>
+
+                            {override.useCustom && (
+                              <>
+                                <div className="track-setting-row">
+                                  <div className="track-setting-col">
+                                    <span className="track-setting-label">Category</span>
+                                    <select 
+                                      className="track-select"
+                                      value={override.category}
+                                      onChange={(e) => updateTrackOverride(entry.id, 'category', e.target.value)}
+                                    >
+                                      <option value="audio">Audio Only</option>
+                                      <option value="video-audio">Video + Audio</option>
+                                      <option value="video-only">Video Only</option>
+                                    </select>
+                                  </div>
+
+                                  <div className="track-setting-col">
+                                    <span className="track-setting-label">Format</span>
+                                    <select 
+                                      className="track-select"
+                                      value={override.format}
+                                      onChange={(e) => updateTrackOverride(entry.id, 'format', e.target.value)}
+                                    >
+                                      {override.category === 'audio' && (
+                                        <>
+                                          <option value="mp3">MP3</option>
+                                          <option value="m4a">M4A</option>
+                                          <option value="wav">WAV</option>
+                                          <option value="flac">FLAC</option>
+                                          <option value="opus">OPUS</option>
+                                        </>
+                                      )}
+                                      {override.category === 'video-audio' && (
+                                        <>
+                                          <option value="mp4">MP4</option>
+                                          <option value="webm">WEBM</option>
+                                        </>
+                                      )}
+                                      {override.category === 'video-only' && (
+                                        <>
+                                          <option value="mp4-noaudio">MP4 Only</option>
+                                          <option value="webm-noaudio">WEBM Only</option>
+                                        </>
+                                      )}
+                                    </select>
+                                  </div>
+                                </div>
+
+                                <div className="track-setting-row">
+                                  {override.category !== 'audio' && (
+                                    <div className="track-setting-col">
+                                      <span className="track-setting-label">Resolution</span>
+                                      <select 
+                                        className="track-select"
+                                        value={override.resolution}
+                                        onChange={(e) => updateTrackOverride(entry.id, 'resolution', e.target.value)}
+                                      >
+                                        <option value="best">Best Available</option>
+                                        <option value="1080">1080p</option>
+                                        <option value="720">720p</option>
+                                        <option value="480">480p</option>
+                                        <option value="360">360p</option>
+                                      </select>
+                                    </div>
+                                  )}
+
+                                  {override.category === 'audio' && ['mp3', 'm4a', 'opus'].includes(override.format) && (
+                                    <div className="track-setting-col">
+                                      <span className="track-setting-label">Audio Bitrate</span>
+                                      <select 
+                                        className="track-select"
+                                        value={override.audioQuality}
+                                        onChange={(e) => updateTrackOverride(entry.id, 'audioQuality', e.target.value)}
+                                      >
+                                        <option value="best">Best Available</option>
+                                        <option value="320">320 kbps</option>
+                                        <option value="256">256 kbps</option>
+                                        <option value="192">192 kbps</option>
+                                        <option value="128">128 kbps</option>
+                                      </select>
+                                    </div>
+                                  )}
+                                </div>
+                              </>
+                            )}
+
+                            <div className="track-setting-row">
+                              <div className="track-setting-col">
+                                <span className="track-setting-label">Clip/Trim Range (Optional)</span>
+                                <div className="track-trim-grid">
+                                  <div>
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>Start (e.g. 0:30)</span>
+                                    <input 
+                                      type="text" 
+                                      className="track-input"
+                                      placeholder="0:00"
+                                      value={override.trimStart || ''}
+                                      onChange={(e) => updateTrackOverride(entry.id, 'trimStart', e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>End (e.g. 1:45)</span>
+                                    <input 
+                                      type="text" 
+                                      className="track-input"
+                                      placeholder="End"
+                                      value={override.trimEnd || ''}
+                                      onChange={(e) => updateTrackOverride(entry.id, 'trimEnd', e.target.value)}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

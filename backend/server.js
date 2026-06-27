@@ -203,10 +203,22 @@ app.post('/api/info', async (req, res) => {
 
 // Trigger Download
 app.post('/api/download', async (req, res) => {
-  const { urls, format, resolution, audioQuality } = req.body;
+  const { urls, format, resolution, audioQuality, tracks, embedMetadata, downloadSubtitles, embedSubtitles } = req.body;
   
-  if (!urls || !Array.isArray(urls) || urls.length === 0) {
-    return res.status(400).json({ error: 'No video URLs provided.' });
+  let tracksToDownload = [];
+  if (tracks && Array.isArray(tracks) && tracks.length > 0) {
+    tracksToDownload = tracks;
+  } else if (urls && Array.isArray(urls)) {
+    tracksToDownload = urls.map(url => ({
+      url,
+      format,
+      resolution,
+      audioQuality
+    }));
+  }
+
+  if (tracksToDownload.length === 0) {
+    return res.status(400).json({ error: 'No video URLs or tracks provided.' });
   }
 
   const sessionId = uuidv4();
@@ -217,7 +229,7 @@ app.post('/api/download', async (req, res) => {
     status: 'starting',
     progress: 0,
     currentVideoIndex: 0,
-    totalVideos: urls.length,
+    totalVideos: tracksToDownload.length,
     currentTitle: '',
     speed: '',
     eta: '',
@@ -227,30 +239,61 @@ app.post('/api/download', async (req, res) => {
   sessions.set(sessionId, initialStatus);
   res.json({ sessionId });
 
-  runDownloadQueue(sessionId, sessionDir, urls, format, resolution, audioQuality);
+  runDownloadQueue(sessionId, sessionDir, tracksToDownload, format, resolution, audioQuality, embedMetadata, downloadSubtitles, embedSubtitles);
 });
 
+// Concurrency Pool Helper
+async function runWithLimit(concurrency, items, fn) {
+  const results = [];
+  const executing = new Set();
+  for (let i = 0; i < items.length; i++) {
+    const p = fn(items[i], i).then(res => {
+      executing.delete(p);
+      return res;
+    });
+    results.push(p);
+    executing.add(p);
+    if (executing.size >= concurrency) {
+      await Promise.race(executing);
+    }
+  }
+  return Promise.all(results);
+}
+
 // Download Queue Runner
-async function runDownloadQueue(sessionId, sessionDir, urls, format, resolution, audioQuality) {
+async function runDownloadQueue(sessionId, sessionDir, tracks, globalFormat, globalResolution, globalAudioQuality, embedMetadata, downloadSubtitles, embedSubtitles) {
   try {
-    const total = urls.length;
+    const total = tracks.length;
     const failedVideos = [];
     let successfulCount = 0;
     
-    for (let i = 0; i < total; i++) {
-      const url = urls[i];
-      const videoIndex = i + 1;
-      
+    // Track individual progress of each track
+    const trackProgresses = new Array(total).fill(0);
+    const activeTitles = new Set();
+    let overallSpeed = '';
+    let overallEta = '';
+
+    const CONCURRENCY = Math.min(3, total);
+
+    const downloadTrack = async (track, index) => {
+      const url = track.url;
+      const format = track.format || globalFormat || 'mp3';
+      const resolution = track.resolution || globalResolution || 'best';
+      const audioQuality = track.audioQuality || globalAudioQuality || 'best';
+      const trimStart = track.trimStart;
+      const trimEnd = track.trimEnd;
+      const videoIndex = index + 1;
+
+      // Fetch title
+      const title = await getVideoTitle(url);
+      const displayTitle = title || `Track ${videoIndex}`;
+      activeTitles.add(displayTitle);
+
       broadcastStatus(sessionId, {
         status: 'downloading',
-        currentVideoIndex: videoIndex,
-        speed: '',
-        eta: '',
-        details: `Fetching metadata for video ${videoIndex} of ${total}...`
+        details: `Downloading ${activeTitles.size} active tracks concurrently...`,
+        currentTitle: Array.from(activeTitles).slice(0, 2).join(', ') + (activeTitles.size > 2 ? ` (+${activeTitles.size - 2} more)` : '')
       });
-
-      const title = await getVideoTitle(url);
-      broadcastStatus(sessionId, { currentTitle: title || 'Downloading...' });
 
       const args = [];
       const audioFormats = ['mp3', 'm4a', 'wav', 'flac', 'opus'];
@@ -295,6 +338,30 @@ async function runDownloadQueue(sessionId, sessionDir, urls, format, resolution,
         }
       }
 
+      // Metadata & Album Art embedding
+      if (embedMetadata) {
+        args.push('--embed-metadata');
+        args.push('--embed-thumbnail');
+      }
+
+      // Subtitles downloading / embedding
+      if (downloadSubtitles) {
+        args.push('--write-subs');
+        args.push('--write-auto-subs');
+        args.push('--sub-langs', 'en');
+        if (embedSubtitles && !isAudioOnly) {
+          args.push('--embed-subs');
+        }
+      }
+
+      // Section trimming/clipping
+      if (trimStart || trimEnd) {
+        const start = trimStart ? trimStart.trim() : '0';
+        const end = trimEnd ? trimEnd.trim() : 'inf';
+        args.push('--download-sections', `*${start}-${end}`);
+        args.push('--force-keyframes-at-cuts');
+      }
+
       args.push('-o', path.join(sessionDir, '%(title)s.%(ext)s'));
       args.push(url);
 
@@ -315,18 +382,17 @@ async function runDownloadQueue(sessionId, sessionDir, urls, format, resolution,
               const speedMatch = line.match(/at\s+(\S+\/s)/) || line.match(/at\s+(\S+)/);
               const etaMatch = line.match(/ETA\s+(\S+)/);
               
-              const speed = speedMatch ? speedMatch[1] : '';
-              const eta = etaMatch ? etaMatch[1] : '';
+              if (speedMatch) overallSpeed = speedMatch[1];
+              if (etaMatch) overallEta = etaMatch[1];
               
-              const baseProgress = ((videoIndex - 1) / total) * 100;
-              const itemContribution = (percent / total);
-              const overallProgress = Math.round(baseProgress + itemContribution);
+              trackProgresses[index] = percent;
+              const overallProgress = Math.round(trackProgresses.reduce((a, b) => a + b, 0) / total);
               
               broadcastStatus(sessionId, {
-                progress: overallProgress,
-                speed,
-                eta,
-                details: `Downloading track (${percent}%)`
+                progress: Math.min(overallProgress, 94),
+                speed: overallSpeed,
+                eta: overallEta,
+                details: `Downloading... Avg: ${overallProgress}%`
               });
             }
           }
@@ -341,13 +407,23 @@ async function runDownloadQueue(sessionId, sessionDir, urls, format, resolution,
         });
       });
 
+      activeTitles.delete(displayTitle);
       if (success) {
         successfulCount++;
+        trackProgresses[index] = 100;
       } else {
-        console.warn(`Track fail: ${title || url}`);
-        failedVideos.push(title || `Track ${videoIndex}`);
+        console.warn(`Track fail: ${displayTitle}`);
+        failedVideos.push(displayTitle);
+        trackProgresses[index] = 0;
       }
-    }
+      
+      const overallProgress = Math.round(trackProgresses.reduce((a, b) => a + b, 0) / total);
+      broadcastStatus(sessionId, {
+        progress: Math.min(overallProgress, 94)
+      });
+    };
+
+    await runWithLimit(CONCURRENCY, tracks, downloadTrack);
 
     if (successfulCount === 0) {
       throw new Error('All selected tracks failed to download.');
