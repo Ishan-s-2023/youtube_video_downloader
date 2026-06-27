@@ -256,12 +256,17 @@ async function runDownloadQueue(sessionId, sessionDir, urls, format, resolution,
         
         child.stdout.on('data', (data) => {
           const output = data.toString();
-          const match = output.match(/\[download\]\s+(\d+(?:\.\d+)?)%\s+of\s+(\S+)\s+at\s+(\S+)\s+ETA\s+(\S+)/);
+          const percentMatch = output.match(/\[download\]\s+(\d+(?:\.\d+)?)%/);
           
-          if (match) {
-            const percent = parseFloat(match[1]);
-            const speed = match[3];
-            const eta = match[4];
+          if (percentMatch) {
+            const percent = parseFloat(percentMatch[1]);
+            
+            // Capture speed and ETA individually to support varying size/spacing formats
+            const speedMatch = output.match(/at\s+(\S+\/s)/) || output.match(/at\s+(\S+)/);
+            const etaMatch = output.match(/ETA\s+(\S+)/);
+            
+            const speed = speedMatch ? speedMatch[1] : '';
+            const eta = etaMatch ? etaMatch[1] : '';
             
             const baseProgress = ((videoIndex - 1) / total) * 100;
             const itemContribution = (percent / total);

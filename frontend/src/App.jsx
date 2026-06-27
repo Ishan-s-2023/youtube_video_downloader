@@ -9,12 +9,15 @@ import {
   RefreshCw, 
   ArrowLeft,
   Settings,
-  Film
+  Film,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
 
 export default function App() {
+  const [isLightTheme, setIsLightTheme] = useState(false);
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -33,6 +36,15 @@ export default function App() {
   const [sessionId, setSessionId] = useState(null);
   const [downloadStatus, setDownloadStatus] = useState(null);
   const eventSourceRef = useRef(null);
+
+  // Set default format based on category
+  useEffect(() => {
+    if (isLightTheme) {
+      document.documentElement.classList.add('light-theme');
+    } else {
+      document.documentElement.classList.remove('light-theme');
+    }
+  }, [isLightTheme]);
 
   // Set default format based on category
   useEffect(() => {
@@ -188,6 +200,23 @@ export default function App() {
   };
 
   useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      const isDownloading = sessionId && downloadStatus && 
+                            downloadStatus.status !== 'completed' && 
+                            downloadStatus.status !== 'failed';
+      if (isDownloading) {
+        e.preventDefault();
+        e.returnValue = 'A download is in progress. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [sessionId, downloadStatus]);
+
+  useEffect(() => {
     return () => {
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
@@ -197,7 +226,15 @@ export default function App() {
 
   return (
     <div className="app-container">
-      <header style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+      <header style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', position: 'relative' }}>
+        <button 
+          onClick={() => setIsLightTheme(!isLightTheme)} 
+          className="btn-secondary" 
+          style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', padding: '0.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '38px', height: '38px' }}
+          title={isLightTheme ? "Switch to Dark Mode" : "Switch to Light Mode"}
+        >
+          {isLightTheme ? <Moon size={18} /> : <Sun size={18} />}
+        </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
           <Youtube size={42} className="text-gradient" style={{ filter: 'drop-shadow(0 0 12px rgba(99,102,241,0.5))' }} />
           <h1>Loader</h1>

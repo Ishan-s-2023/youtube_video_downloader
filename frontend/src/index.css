@@ -29,6 +29,18 @@
   --radius-2xl: 24px;
 }
 
+:root.light-theme {
+  --bg-obsidian: #f3f4f6;
+  --bg-card: rgba(255, 255, 255, 0.7);
+  --bg-card-hover: rgba(255, 255, 255, 0.85);
+  --border-glass: rgba(0, 0, 0, 0.08);
+  --border-glass-active: rgba(99, 102, 241, 0.5);
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  --shadow-premium: 0 20px 40px -15px rgba(0, 0, 0, 0.06);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -42,6 +54,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   position: relative;
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
 /* Background Gradients */
@@ -201,6 +214,10 @@ h1 {
   margin-top: 1.5rem;
 }
 
+.config-grid > div {
+  min-width: 0;
+}
+
 .config-section-title {
   font-family: var(--font-display);
   font-size: 1rem;
@@ -342,7 +359,7 @@ h1 {
 }
 
 .playlist-list {
-  max-height: 320px;
+  max-height: 500px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
