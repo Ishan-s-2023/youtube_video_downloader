@@ -91,13 +91,34 @@ function cleanUpDownloads() {
 }
 setInterval(cleanUpDownloads, 15 * 60 * 1000); // run every 15 mins
 
-// SSE Status Broadcast
+// Throttled SSE Status Broadcast — prevents hundreds of writes/sec from saturating the event stream
+const broadcastTimers = new Map();
 function broadcastStatus(sessionId, statusData) {
   sessions.set(sessionId, { ...sessions.get(sessionId), ...statusData });
+  
+  // Always broadcast terminal states immediately
+  const status = statusData.status;
+  if (status === 'completed' || status === 'failed' || status === 'zipping') {
+    broadcastTimers.delete(sessionId);
+    flushBroadcast(sessionId);
+    return;
+  }
+
+  // Throttle progress updates to every 250ms
+  if (!broadcastTimers.has(sessionId)) {
+    broadcastTimers.set(sessionId, setTimeout(() => {
+      broadcastTimers.delete(sessionId);
+      flushBroadcast(sessionId);
+    }, 250));
+  }
+}
+
+function flushBroadcast(sessionId) {
+  const session = sessions.get(sessionId);
+  if (!session) return;
   const clientList = clients.get(sessionId) || [];
-  clientList.forEach((res) => {
-    res.write(`data: ${JSON.stringify(sessions.get(sessionId))}\n\n`);
-  });
+  const payload = `data: ${JSON.stringify(session)}\n\n`;
+  clientList.forEach((res) => res.write(payload));
 }
 
 // Fetch Video/Playlist Metadata for single URL helper
@@ -298,8 +319,11 @@ async function runDownloadQueue(sessionId, sessionDir, tracks, globalFormat, glo
         '--concurrent-fragments', '32',
         '--no-playlist',
         '--no-mtime',
+        '--no-warnings',
+        '--no-check-certificates',
         '--extractor-args', 'youtube:skip=hls,dash',
-        '--http-chunk-size', '10M'
+        '--http-chunk-size', '10M',
+        '--buffer-size', '64K'
       ];
       const audioFormats = ['mp3', 'm4a', 'wav', 'flac', 'opus'];
       const isAudioOnly = audioFormats.includes(format);
@@ -434,26 +458,46 @@ async function runDownloadQueue(sessionId, sessionDir, tracks, globalFormat, glo
       throw new Error('All selected tracks failed to download.');
     }
 
-    broadcastStatus(sessionId, {
-      status: 'zipping',
-      progress: 95,
-      details: 'Packaging files into a ZIP archive...'
-    });
+    // Check how many files were actually downloaded
+    const downloadedFiles = fs.readdirSync(sessionDir);
 
-    const zipPath = `${sessionDir}.zip`;
-    await zipDirectory(sessionDir, zipPath);
+    if (downloadedFiles.length === 1) {
+      // Single file — skip ZIP entirely, just move the file out
+      const srcFile = path.join(sessionDir, downloadedFiles[0]);
+      const destFile = path.join(downloadsDir, `${sessionId}_${downloadedFiles[0]}`);
+      fs.renameSync(srcFile, destFile);
+      fs.rm(sessionDir, { recursive: true, force: true }, () => {});
 
-    fs.rm(sessionDir, { recursive: true, force: true }, (err) => {
-      if (err) console.error('Error cleaning up temp directory:', err);
-    });
+      broadcastStatus(sessionId, {
+        status: 'completed',
+        progress: 100,
+        singleFile: downloadedFiles[0],
+        details: failedVideos.length > 0
+          ? `Finished. Skipped ${failedVideos.length} failed tracks: ${failedVideos.join(', ')}`
+          : 'Download complete!'
+      });
+    } else {
+      broadcastStatus(sessionId, {
+        status: 'zipping',
+        progress: 95,
+        details: 'Packaging files...'
+      });
 
-    broadcastStatus(sessionId, {
-      status: 'completed',
-      progress: 100,
-      details: failedVideos.length > 0
-        ? `Finished. Successfully packaged ${successfulCount} tracks. Skipped ${failedVideos.length} failed tracks: ${failedVideos.join(', ')}`
-        : 'ZIP archive created successfully!'
-    });
+      const zipPath = `${sessionDir}.zip`;
+      await zipDirectory(sessionDir, zipPath);
+
+      fs.rm(sessionDir, { recursive: true, force: true }, (err) => {
+        if (err) console.error('Error cleaning up temp directory:', err);
+      });
+
+      broadcastStatus(sessionId, {
+        status: 'completed',
+        progress: 100,
+        details: failedVideos.length > 0
+          ? `Finished. Successfully packaged ${successfulCount} tracks. Skipped ${failedVideos.length} failed tracks: ${failedVideos.join(', ')}`
+          : 'ZIP archive created successfully!'
+      });
+    }
 
   } catch (error) {
     console.error('Download queue error:', error);
@@ -467,19 +511,11 @@ async function runDownloadQueue(sessionId, sessionDir, tracks, globalFormat, glo
   }
 }
 
-function getVideoTitle(url) {
-  return new Promise((resolve) => {
-    execFile(ytdlpPath, ['--get-title', url], (error, stdout) => {
-      if (error) resolve(null);
-      else resolve(stdout.trim());
-    });
-  });
-}
-
 function zipDirectory(sourceDir, outPath) {
   return new Promise((resolve, reject) => {
     const output = fs.createWriteStream(outPath);
-    const archive = archiver('zip', { zlib: { level: 1 } }); // level 1 = fastest compression
+    // level 0 = store mode — no compression CPU cost (media files are already compressed)
+    const archive = archiver('zip', { store: true });
 
     output.on('close', () => resolve());
     archive.on('error', (err) => reject(err));
@@ -531,10 +567,26 @@ app.get('/api/status/:sessionId', (req, res) => {
 
 app.get('/api/retrieve/:sessionId', (req, res) => {
   const { sessionId } = req.params;
-  const zipPath = path.join(downloadsDir, `${sessionId}.zip`);
 
+  // Check for single file first (no ZIP was created)
+  const files = fs.readdirSync(downloadsDir).filter(f => f.startsWith(`${sessionId}_`));
+  if (files.length === 1) {
+    const singleFilePath = path.join(downloadsDir, files[0]);
+    const originalName = files[0].substring(sessionId.length + 1); // strip sessionId_ prefix
+    return res.download(singleFilePath, originalName, (err) => {
+      if (err) {
+        console.error('Error serving file:', err);
+      } else {
+        fs.unlink(singleFilePath, () => {});
+        sessions.delete(sessionId);
+      }
+    });
+  }
+
+  // Fall back to ZIP
+  const zipPath = path.join(downloadsDir, `${sessionId}.zip`);
   if (!fs.existsSync(zipPath)) {
-    return res.status(404).json({ error: 'ZIP file not found.' });
+    return res.status(404).json({ error: 'File not found.' });
   }
 
   res.download(zipPath, 'youtube_downloads.zip', (err) => {
