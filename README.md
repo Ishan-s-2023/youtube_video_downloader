@@ -1,51 +1,85 @@
 # Loader — Premium YouTube Video & Playlist Downloader
 
-Loader is a minimalist, premium, and fully functional web application that allows users to download YouTube videos and playlists, customize outputs, and package everything into a single ZIP file. It is 100% free and supports extensive format conversion.
-
-## ✨ Features
-
-- **Format Selection**:
-  - **Audio & Video**: MP4 (H.264), WebM (VP9).
-  - **Video Only**: MP4, WebM (no audio track).
-  - **Audio Only**: MP3, M4A, WAV, FLAC, OPUS.
-- **Granular Customization**:
-  - Video resolution controls (1080p, 720p, 480p, 360p).
-  - Audio bitrate controls (320kbps, 256kbps, 192kbps, 128kbps).
-- **Playlist Downloader**:
-  - Fast flat-playlist metadata fetching.
-  - Checkbox selection to pick specific tracks, or download all in one click.
-- **Sleek Interface**:
-  - Obsidian dark mode.
-  - Glassmorphic card layouts with backdrop blurs.
-  - Interactive radial progress ring and speed indicators.
-- **Vercel Deployable**:
-  - Configured monorepo setup via `vercel.json`.
-  - Automatic adaptation to `/tmp/` directories for Vercel's read-only filesystem.
+Loader is a sleek, minimalist web application that allows users to download YouTube videos and playlists, customize outputs, and package everything into a single ZIP file.
 
 ---
 
-## 🚀 Setup & Local Execution
+## 🚀 Local Setup & Execution
 
-### Prerequisites
-- Node.js (v24+)
-- `ffmpeg` installed on the system (for audio merging and extraction)
+Follow these simple steps to run Loader on your local machine:
 
-### Quick Start
-1. Clone the repository and install dependencies:
-   ```bash
-   npm run install:all
-   ```
-2. Start both the frontend and backend concurrently:
-   ```bash
-   npm run dev
-   ```
-3. Open [http://localhost:5173/](http://localhost:5173/) in your browser.
+### 1. Prerequisites
+Ensure you have the following installed:
+*   [Node.js](https://nodejs.org/) (v24 or later)
+*   **FFmpeg** (Required to merge high-resolution video streams with audio streams)
 
-*Note: On first execution, the backend will automatically check for and download the latest platform-specific `yt-dlp` executable.*
+### 2. Installation
+Open your terminal in the project root directory and install all dependencies:
+```bash
+npm run install:all
+```
+This automatically installs the backend, frontend, and monorepo dependencies.
+
+### 3. Run the App
+Start the development server for both frontend and backend concurrently:
+```bash
+npm run dev
+```
+
+Once running, open your browser and navigate to:
+👉 **[http://localhost:5173/](http://localhost:5173/)**
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Setting up FFmpeg (Required)
 
-- **Frontend**: React, Vite, Vanilla CSS, Lucide Icons.
-- **Backend**: Express.js, Server-Sent Events (SSE), Archiver, `yt-dlp` Wrapper.
+If FFmpeg is not installed on your system, follow the guide for your OS:
+
+### **macOS**
+Install using [Homebrew](https://brew.sh/):
+```bash
+brew install ffmpeg
+```
+
+### **Windows**
+1. Download the latest build from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/).
+2. Extract the ZIP folder to `C:\ffmpeg`.
+3. Add `C:\ffmpeg\bin` to your System Environment variables (PATH).
+4. Restart your terminal and verify by running: `ffmpeg -version`
+
+### **Linux (Ubuntu/Debian)**
+Install via APT:
+```bash
+sudo apt update && sudo apt install ffmpeg -y
+```
+
+---
+
+## ⚡ Deployment to Vercel
+
+Loader is fully optimized for Vercel, dynamically writing temporary downloads to Vercel's writable `/tmp/` directory.
+
+### Deploy via Vercel CLI
+1. Install the Vercel CLI:
+   ```bash
+   npm install -g vercel
+   ```
+2. Run the deployment command from the project root:
+   ```bash
+   vercel
+   ```
+3. Follow the CLI prompts to link and deploy your project.
+
+### Deploy via GitHub (Continuous Integration)
+1. Push this repository to your GitHub account.
+2. Go to the [Vercel Dashboard](https://vercel.com/) and click **Add New** > **Project**.
+3. Import your GitHub repository.
+4. Keep the default settings and click **Deploy**. Vercel will build and serve your app automatically using the root `vercel.json` configuration.
+
+---
+
+## 🎨 Tech Stack
+
+*   **Frontend**: React, Vite, Vanilla CSS, Lucide Icons
+*   **Backend**: Express.js, Server-Sent Events (SSE), Archiver, `yt-dlp` Wrapper
+
