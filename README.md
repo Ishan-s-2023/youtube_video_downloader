@@ -96,8 +96,8 @@ Loader contains a configured `vercel.json` file. However, please be aware of the
 For a stable production setup:
 1. **Frontend**: Deploy the static frontend to **Vercel**, **GitHub Pages**, or **Netlify**.
 2. **Backend**: Host the backend Express server separately on a dedicated/containerized hosting service with no timeout limits:
-   * **Google Cloud Run** (Recommended, configured as a container service)
-   * **Google Compute Engine** (or any VM instance)
+   * **Cloud Run** (Recommended, configured as a container service)
+   * **Compute Engine** (or any VM instance)
    * **Render** (Web Services)
    * **AWS ECS** / **EC2**
    * **DigitalOcean Droplet** / **VPS**
