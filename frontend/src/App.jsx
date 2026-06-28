@@ -252,6 +252,38 @@ export default function App() {
     }
   };
 
+  const triggerDownload = async (sessId) => {
+    try {
+      setError(null);
+      const response = await fetch(`${API_BASE}/api/retrieve/${sessId}`);
+      if (!response.ok) {
+        throw new Error('Failed to retrieve download file.');
+      }
+      
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'youtube_downloads.zip';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error('Download error:', err);
+      setError('Failed to trigger automatic download. Please try clicking "Download again".');
+    }
+  };
+
   const startProgressSSE = (sessId) => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
@@ -268,13 +300,7 @@ export default function App() {
 
         if (data.status === 'completed') {
           es.close();
-          const downloadUrl = `${API_BASE}/api/retrieve/${sessId}`;
-          const link = document.createElement('a');
-          link.href = downloadUrl;
-          link.setAttribute('download', '');
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          triggerDownload(sessId);
         } else if (data.status === 'failed') {
           es.close();
           setError(data.details || 'Download session failed.');
@@ -788,9 +814,9 @@ export default function App() {
                   Your ZIP file has been created. The download should start automatically.
                 </p>
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                  <a href={`${API_BASE}/api/retrieve/${sessionId}`} className="btn-primary" style={{ textDecoration: 'none' }}>
+                  <button onClick={() => triggerDownload(sessionId)} className="btn-primary">
                     <Download size={18} /> Download again
-                  </a>
+                  </button>
                   <button className="btn-secondary" onClick={handleReset}>
                     Start New
                   </button>

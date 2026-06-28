@@ -576,9 +576,6 @@ app.get('/api/retrieve/:sessionId', (req, res) => {
     return res.download(singleFilePath, originalName, (err) => {
       if (err) {
         console.error('Error serving file:', err);
-      } else {
-        fs.unlink(singleFilePath, () => {});
-        sessions.delete(sessionId);
       }
     });
   }
@@ -592,11 +589,6 @@ app.get('/api/retrieve/:sessionId', (req, res) => {
   res.download(zipPath, 'youtube_downloads.zip', (err) => {
     if (err) {
       console.error('Error serving ZIP file:', err);
-    } else {
-      fs.unlink(zipPath, (unlinkErr) => {
-        if (unlinkErr) console.error('Error deleting ZIP:', unlinkErr);
-      });
-      sessions.delete(sessionId);
     }
   });
 });
