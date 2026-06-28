@@ -33,34 +33,28 @@ Node.js runs the local server and builds the interface.
 ### 🎥 Step 2: Download, Unzip, and Set Up FFmpeg (Crucial for Video/Audio merging)
 FFmpeg is required to merge high-definition video with audio stream tracks.
 
-#### **For Windows (Manual Download & Unzip)**
-1. **Download**: Go to [gyan.dev FFmpeg Builds](https://www.gyan.dev/ffmpeg/builds/) and download the zip file under the **release builds** section named:
-   * `ffmpeg-release-essentials.zip` (Direct Link: [ffmpeg-release-essentials.zip](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip))
-2. **Unzip/Extract**:
-   * Locate the downloaded `.zip` file in your **Downloads** folder.
-   * Right-click the file and click **Extract All...**
-   * Change the destination path to `C:\` and click **Extract**.
-   * Go to `C:\` in your File Explorer. Rename the extracted folder (e.g., `ffmpeg-7.0.1-essentials_build`) to simply `ffmpeg`.
-   * Ensure that the folder path `C:\ffmpeg\bin` exists and contains `ffmpeg.exe`.
-3. **Set Path Environment Variable**:
-   * Press the **Windows Key**, type `env`, and press Enter (selects **Edit the system environment variables**).
-   * In the window that appears, click the **Environment Variables...** button at the bottom.
-   * Under the **User variables** section, find the variable named `Path` (or `PATH`), select it, and click **Edit...**.
-   * Click **New** on the right side and type: `C:\ffmpeg\bin`
-   * Click **OK** on all open windows to save the changes.
-4. **Verify**: Open a new Command Prompt or PowerShell window and run:
-   ```cmd
-   ffmpeg -version
-   ```
+#### **For Windows (Simplified Setup)**
+1. **Download**: Click to download [ffmpeg-release-essentials.zip](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip).
+2. **Extract**: 
+   * Go to your `Downloads` folder, right-click the zip, and select **Extract All...**
+   * Extract it directly to your `C:\` drive.
+   * Rename the extracted folder (e.g. `ffmpeg-7.0.1-essentials_build`) to `ffmpeg` so the path is exactly `C:\ffmpeg`.
+3. **Set Environment Path**:
+   * Search for **env** in the Windows search bar and choose **Edit the system environment variables**.
+   * Click **Environment Variables...** at the bottom.
+   * Double-click **Path** under *User variables*.
+   * Click **New** and type: `C:\ffmpeg\bin`
+   * Click **OK** on all windows to save.
+4. **Verify**: Open a new Command Prompt and run: `ffmpeg -version`
 
 #### **For macOS**
-Install via terminal using Homebrew:
+Install via Homebrew:
 ```bash
 brew install ffmpeg
 ```
 
 #### **For Linux (Ubuntu/Debian)**
-Install via terminal:
+Install via APT:
 ```bash
 sudo apt update && sudo apt install ffmpeg -y
 ```
@@ -68,19 +62,19 @@ sudo apt update && sudo apt install ffmpeg -y
 ---
 
 ### 💻 Step 3: Run the Application Locally
-1. **Open your Terminal / Command Prompt**.
+1. **Open Terminal / Command Prompt**.
 2. **Navigate into the Project Folder**:
-   Change directory to where you cloned/extracted the project folder (for example, if it's on your Documents folder):
+   Go to the directory where you cloned or unzipped the project folder:
    ```bash
-   cd C:\Users\Ishan\Documents\antigravity\eager-hypatia
+   cd C:\youtube_video_downloader
+   # Or if it is in your Downloads folder:
+   cd C:\Users\YourUsername\Downloads\youtube_video_downloader
    ```
-3. **Install Project Dependencies**:
-   Run the monorepo installation script to install dependencies for root, frontend, and backend packages:
+3. **Install Dependencies**:
    ```bash
    npm run install:all
    ```
-4. **Start the Servers**:
-   Launch both the frontend and backend servers concurrently:
+4. **Start the App**:
    ```bash
    npm run dev
    ```
