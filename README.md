@@ -84,28 +84,26 @@ sudo apt update && sudo apt install ffmpeg -y
 
 ---
 
-## ⚡ Deployment to Vercel
+## ⚡ Deployment & Hosting Recommendations
 
-Loader is fully optimized for Vercel, dynamically writing temporary downloads to Vercel's writable `/tmp/` directory.
+Loader contains a configured `vercel.json` file. However, please be aware of the following serverless limitations before deploying:
 
-### Deploy via Vercel CLI
-1. Install the Vercel CLI:
-   ```bash
-   npm install -g vercel
-   ```
-2. Run the deployment command from the project root:
-   ```bash
-   vercel
-   ```
-3. Follow the CLI prompts to link and deploy your project.
+> [!WARNING]
+> **Serverless Execution Limits (Vercel)**
+> Due to Vercel's serverless function timeout limits (10 seconds for Hobby plans) and ephemeral disk space, running the backend on Vercel is **not recommended** for downloading long videos or large playlists. Long-running processes will fail or timeout.
 
-### Deploy via GitHub (Continuous Integration)
-1. Push this repository to your GitHub account.
-2. Go to the [Vercel Dashboard](https://vercel.com/) and click **Add New** > **Project**.
-3. Import your GitHub repository.
-4. Keep the default settings and click **Deploy**. Vercel will build and serve your app automatically using the root `vercel.json` configuration.
+### 🌐 Recommended Production Architecture
+For a stable production setup:
+1. **Frontend**: Deploy the static frontend to **Vercel**, **GitHub Pages**, or **Netlify**.
+2. **Backend**: Host the backend Express server separately on a dedicated/containerized hosting service with no timeout limits:
+   * **Google Cloud Run** (Recommended, configured as a container service)
+   * **Google Compute Engine** (or any VM instance)
+   * **Render** (Web Services)
+   * **AWS ECS** / **EC2**
+   * **DigitalOcean Droplet** / **VPS**
 
 ---
+
 
 ## 🎨 Tech Stack
 
