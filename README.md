@@ -4,54 +4,89 @@ Loader is a sleek, minimalist web application that allows users to download YouT
 
 ---
 
-## 🚀 Local Setup & Execution
+## 📁 Project Structure
 
-Follow these simple steps to run Loader on your local machine:
-
-### 1. Prerequisites
-Ensure you have the following installed:
-*   [Node.js](https://nodejs.org/) (v24 or later)
-*   **FFmpeg** (Required to merge high-resolution video streams with audio streams)
-
-### 2. Installation
-Open your terminal in the project root directory and install all dependencies:
-```bash
-npm run install:all
-```
-This automatically installs the backend, frontend, and monorepo dependencies.
-
-### 3. Run the App
-Start the development server for both frontend and backend concurrently:
-```bash
-npm run dev
-```
-
-Once running, open your browser and navigate to:
-👉 **[http://localhost:5173/](http://localhost:5173/)**
+The project is structured as a monorepo containing:
+*   **Root Folder**: `youtube_video_downloader` (Contains root configuration files like `package.json` and `vercel.json`).
+*   **Frontend**: Located in the `frontend` folder (The web UI built with React + Vite).
+*   **Backend**: Located in the `backend` folder (The Express.js server that runs downloads using `yt-dlp`).
 
 ---
 
-## 🛠️ Setting up FFmpeg (Required)
+## 🚀 Step-by-Step Installation & Local Run Guide
 
-If FFmpeg is not installed on your system, follow the guide for your OS:
+Here is exactly how to download, install dependencies, configure environment paths, and run the project from scratch.
 
-### **macOS**
-Install using [Homebrew](https://brew.sh/):
+### 📦 Step 1: Install Node.js
+Node.js runs the local server and builds the interface.
+1. Download the **Node.js LTS (Recommended)** installer from [nodejs.org](https://nodejs.org/).
+2. Run the downloaded `.msi` or `.pkg` installer.
+3. Click **Next** through the setup wizard (leave default settings checked) and finish.
+4. Verify installation by opening a new command terminal and running:
+   ```bash
+   node -v
+   npm -v
+   ```
+
+---
+
+### 🎥 Step 2: Download, Unzip, and Set Up FFmpeg (Crucial for Video/Audio merging)
+FFmpeg is required to merge high-definition video with audio stream tracks.
+
+#### **For Windows (Manual Download & Unzip)**
+1. **Download**: Go to [gyan.dev FFmpeg Builds](https://www.gyan.dev/ffmpeg/builds/) and download the zip file under the **release builds** section named:
+   * `ffmpeg-release-essentials.zip` (Direct Link: [ffmpeg-release-essentials.zip](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip))
+2. **Unzip/Extract**:
+   * Locate the downloaded `.zip` file in your **Downloads** folder.
+   * Right-click the file and click **Extract All...**
+   * Change the destination path to `C:\` and click **Extract**.
+   * Go to `C:\` in your File Explorer. Rename the extracted folder (e.g., `ffmpeg-7.0.1-essentials_build`) to simply `ffmpeg`.
+   * Ensure that the folder path `C:\ffmpeg\bin` exists and contains `ffmpeg.exe`.
+3. **Set Path Environment Variable**:
+   * Press the **Windows Key**, type `env`, and press Enter (selects **Edit the system environment variables**).
+   * In the window that appears, click the **Environment Variables...** button at the bottom.
+   * Under the **User variables** section, find the variable named `Path` (or `PATH`), select it, and click **Edit...**.
+   * Click **New** on the right side and type: `C:\ffmpeg\bin`
+   * Click **OK** on all open windows to save the changes.
+4. **Verify**: Open a new Command Prompt or PowerShell window and run:
+   ```cmd
+   ffmpeg -version
+   ```
+
+#### **For macOS**
+Install via terminal using Homebrew:
 ```bash
 brew install ffmpeg
 ```
 
-### **Windows**
-1. Download the latest build from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/).
-2. Extract the ZIP folder to `C:\ffmpeg`.
-3. Add `C:\ffmpeg\bin` to your System Environment variables (PATH).
-4. Restart your terminal and verify by running: `ffmpeg -version`
-
-### **Linux (Ubuntu/Debian)**
-Install via APT:
+#### **For Linux (Ubuntu/Debian)**
+Install via terminal:
 ```bash
 sudo apt update && sudo apt install ffmpeg -y
 ```
+
+---
+
+### 💻 Step 3: Run the Application Locally
+1. **Open your Terminal / Command Prompt**.
+2. **Navigate into the Project Folder**:
+   Change directory to where you cloned/extracted the project folder (for example, if it's on your Documents folder):
+   ```bash
+   cd C:\Users\Ishan\Documents\antigravity\eager-hypatia
+   ```
+3. **Install Project Dependencies**:
+   Run the monorepo installation script to install dependencies for root, frontend, and backend packages:
+   ```bash
+   npm run install:all
+   ```
+4. **Start the Servers**:
+   Launch both the frontend and backend servers concurrently:
+   ```bash
+   npm run dev
+   ```
+5. **Open in Browser**:
+   Open your browser and navigate to:
+   👉 **[http://localhost:5173/](http://localhost:5173/)**
 
 ---
 
@@ -82,4 +117,5 @@ Loader is fully optimized for Vercel, dynamically writing temporary downloads to
 
 *   **Frontend**: React, Vite, Vanilla CSS, Lucide Icons
 *   **Backend**: Express.js, Server-Sent Events (SSE), Archiver, `yt-dlp` Wrapper
+
 
