@@ -4,6 +4,29 @@ Loader is a sleek, minimalist web application that allows users to download YouT
 
 ---
 
+## ✨ Features & Functionality
+
+This application supports the following key features and backend functions:
+
+### 📹 Video & Audio Downloading
+*   **Format Selection**:
+    *   **Audio & Video**: MP4 (using standard H.264 video codec) and WebM (VP9 codec).
+    *   **Video Only**: Extract pure video without audio tracks (MP4 or WebM).
+    *   **Audio Only**: Convert and extract pure audio in high fidelity formats like MP3, M4A, WAV, FLAC, and OPUS.
+*   **Granular Quality Selection**:
+    *   Configure video resolution dynamically (360p, 480p, 720p, 1080p).
+    *   Configure audio bitrate controls for custom compressed outputs (128kbps, 192kbps, 256kbps, 320kbps).
+
+### 🎶 Playlist & ZIP Packaging Functions
+*   **Flat Playlist Fetching**: Fast metadata parsing from playlist links to select specific songs or videos.
+*   **Custom Bulk Downloading**: Pick and choose specific tracks from a list via checkboxes or select all.
+*   **Automatic ZIP Archiving**: Downloads are packaged neatly on the backend and sent to the client as a single `.zip` file.
+
+### ⚡ Real-Time Progress Tracking
+*   Uses **Server-Sent Events (SSE)** to stream progress updates directly from the Express backend command process to the React interface, displaying real-time speed, percentages, and status logs.
+
+---
+
 ## 📁 Project Structure
 
 The project is structured as a monorepo containing:
@@ -17,7 +40,22 @@ The project is structured as a monorepo containing:
 
 Here is exactly how to download, install dependencies, configure environment paths, and run the project from scratch.
 
-### 📦 Step 1: Install Node.js
+### 📥 Step 1: Download the Project Repository
+Get the project code on your local system:
+*   **Option A (Using Git)**:
+    Open your terminal/command prompt and clone the repository:
+    ```bash
+    git clone https://github.com/Ishan-s-2023/youtube_video_downloader.git
+    ```
+*   **Option B (Downloading ZIP)**:
+    1. Go to the [GitHub Repository page](https://github.com/Ishan-s-2023/youtube_video_downloader).
+    2. Click the green **Code** button and select **Download ZIP**.
+    3. Find the downloaded `youtube_video_downloader-main.zip` in your `Downloads` folder.
+    4. Right-click the file, select **Extract All...**, and extract it (for example, to `C:\youtube_video_downloader`).
+
+---
+
+### 📦 Step 2: Install Node.js
 Node.js runs the local server and builds the interface.
 1. Download the **Node.js LTS (Recommended)** installer from [nodejs.org](https://nodejs.org/).
 2. Run the downloaded `.msi` or `.pkg` installer.
@@ -30,7 +68,7 @@ Node.js runs the local server and builds the interface.
 
 ---
 
-### 🎥 Step 2: Download, Unzip, and Set Up FFmpeg (Crucial for Video/Audio merging)
+### 🎥 Step 3: Download, Unzip, and Set Up FFmpeg (Crucial for Video/Audio merging)
 FFmpeg is required to merge high-definition video with audio stream tracks.
 
 #### **For Windows (Simplified Setup)**
@@ -61,7 +99,7 @@ sudo apt update && sudo apt install ffmpeg -y
 
 ---
 
-### 💻 Step 3: Run the Application Locally
+### 💻 Step 4: Run the Application Locally
 1. **Open Terminal / Command Prompt**.
 2. **Navigate into the Project Folder**:
    Go to the directory where you cloned or unzipped the project folder:
