@@ -206,6 +206,7 @@ export default function App() {
         if (override && override.useCustom) {
           return {
             url: e.url,
+            title: e.title,
             format: override.format,
             resolution: override.resolution,
             audioQuality: override.audioQuality,
@@ -215,6 +216,7 @@ export default function App() {
         }
         return {
           url: e.url,
+          title: e.title,
           format: format,
           resolution: resolution,
           audioQuality: audioQuality

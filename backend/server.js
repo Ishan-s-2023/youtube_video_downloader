@@ -273,7 +273,7 @@ async function runDownloadQueue(sessionId, sessionDir, tracks, globalFormat, glo
     let overallSpeed = '';
     let overallEta = '';
 
-    const CONCURRENCY = Math.min(5, total);
+    const CONCURRENCY = Math.min(8, total);
 
     const downloadTrack = async (track, index) => {
       const url = track.url;
@@ -284,9 +284,8 @@ async function runDownloadQueue(sessionId, sessionDir, tracks, globalFormat, glo
       const trimEnd = track.trimEnd;
       const videoIndex = index + 1;
 
-      // Fetch title
-      const title = await getVideoTitle(url);
-      const displayTitle = title || `Track ${videoIndex}`;
+      // Use title from track metadata (already fetched during /api/info) — avoids extra yt-dlp call
+      const displayTitle = track.title || `Track ${videoIndex}`;
       activeTitles.add(displayTitle);
 
       broadcastStatus(sessionId, {
@@ -296,8 +295,11 @@ async function runDownloadQueue(sessionId, sessionDir, tracks, globalFormat, glo
       });
 
       const args = [
-        '--concurrent-fragments', '16',
-        '--no-playlist'
+        '--concurrent-fragments', '32',
+        '--no-playlist',
+        '--no-mtime',
+        '--extractor-args', 'youtube:skip=hls,dash',
+        '--http-chunk-size', '10M'
       ];
       const audioFormats = ['mp3', 'm4a', 'wav', 'flac', 'opus'];
       const isAudioOnly = audioFormats.includes(format);
@@ -477,7 +479,7 @@ function getVideoTitle(url) {
 function zipDirectory(sourceDir, outPath) {
   return new Promise((resolve, reject) => {
     const output = fs.createWriteStream(outPath);
-    const archive = archiver('zip', { zlib: { level: 9 } });
+    const archive = archiver('zip', { zlib: { level: 1 } }); // level 1 = fastest compression
 
     output.on('close', () => resolve());
     archive.on('error', (err) => reject(err));
