@@ -268,7 +268,13 @@ export default function App() {
 
         if (data.status === 'completed') {
           es.close();
-          window.location.href = `${API_BASE}/api/retrieve/${sessId}`;
+          const downloadUrl = `${API_BASE}/api/retrieve/${sessId}`;
+          const link = document.createElement('a');
+          link.href = downloadUrl;
+          link.setAttribute('download', '');
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
         } else if (data.status === 'failed') {
           es.close();
           setError(data.details || 'Download session failed.');
@@ -783,7 +789,7 @@ export default function App() {
                 </p>
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                   <a href={`${API_BASE}/api/retrieve/${sessionId}`} className="btn-primary" style={{ textDecoration: 'none' }}>
-                    <Download size={18} /> Download Now
+                    <Download size={18} /> Download again
                   </a>
                   <button className="btn-secondary" onClick={handleReset}>
                     Start New
